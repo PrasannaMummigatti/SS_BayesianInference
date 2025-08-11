@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bayesian Safety Stock — Documentation</title>
+  <style>
+    :root{
+      --bg:#f7fafc;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --accent:#0f172a;
+      --primary:#2563eb;
+      --border:#e6e9ef;
+      --code-bg:#0b1220;
+      --mono:#e6eef8;
+    }
+    body{
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      margin:0;
+      background:var(--bg);
+      color:var(--accent);
+      -webkit-font-smoothing:antialiased;
+      line-height:1.5;
+    }
+    header{
+      background: linear-gradient(90deg, rgba(37,99,235,0.08), rgba(37,99,235,0.02));
+      padding:28px 20px;
+      border-bottom:1px solid var(--border);
+    }
+    .container{
+      max-width:1100px;
+      margin:22px auto;
+      padding:0 18px;
+    }
+    h1{margin:0;font-size:24px;}
+    p.lead{color:var(--muted); margin:8px 0 0;}
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:18px;
+      margin-top:18px;
+      box-shadow: 0 6px 18px rgba(12,20,44,0.04);
+    }
+    details{margin:10px 0; background:linear-gradient(180deg,#fff,#fbfdff); padding:12px; border-radius:8px; border:1px solid #f0f3f7;}
+    summary{font-weight:600; cursor:pointer; outline:none;}
+    h2{font-size:18px;margin:0 0 8px;}
+    h3{font-size:15px;margin:12px 0 6px;}
+    ul{margin:8px 0 12px 20px;}
+    pre {
+      background: linear-gradient(90deg, rgba(2,6,23,0.9), rgba(6,8,20,0.95));
+      color:var(--mono);
+      padding:12px;
+      border-radius:8px;
+      overflow:auto;
+      font-family: "SFMono-Regular","Fira Code", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size:13px;
+      border: 1px solid rgba(255,255,255,0.02);
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+    }
+    .muted{color:var(--muted);}
+    .kbd{
+      background:#eef2ff;
+      border:1px solid #e0e7ff;
+      padding:2px 8px;
+      border-radius:6px;
+      font-weight:600;
+      font-size:13px;
+      color:#1e3a8a;
+    }
+    footer{margin:26px 0 60px; color:var(--muted); text-align:center; font-size:13px;}
+    @media (max-width:880px){
+      .grid{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>Bayesian Safety Stock — Documentation</h1>
+      <p class="lead">Step-by-step workflow, exact formulas, and assumptions used by the real-time Bayesian safety stock Streamlit app.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>1. Overview</h2>
+      <p>This app simulates demand and lead time, performs Bayesian updates as new observations arrive, produces a posterior predictive distribution for <strong>demand during lead time (DLT)</strong>, and computes safety stock for a chosen service level. Visuals include time series, histograms, posterior plots, predictive histograms, and safety-stock evolution.</p>
+    </section>
+
+    <section class="card">
+      <h2>2. Data generation (simulation inputs)</h2>
+      <div class="grid">
+        <div>
+          <h3>Demand</h3>
+          <p class="muted">Simulated as a Poisson process:</p>
+          <pre>D_t ~ Poisson(λ)</pre>
+          <p>Where <span class="kbd">λ</span> (lambda) is set by the user via the sidebar.</p>
+        </div>
+
+        <div>
+          <h3>Lead time</h3>
+          <p class="muted">Simulated as integer draws from a user-specified range (min, max):</p>
+          <pre>L_t ~ UniformInteger(min_lead, max_lead)</pre>
+          <p>This captures delivery-time uncertainty in a simple, interpretable way.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>3. Priors (Bayesian setup)</h2>
+      <p>The app uses conjugate priors for speed and clarity:</p>
+      <ul>
+        <li><strong>Demand rate (λ)</strong>: Gamma prior — <code>λ ~ Gamma(α_d⁽⁰⁾, β_d⁽⁰⁾)</code></li>
+        <li><strong>Lead time (L)</strong>: Gamma prior in the Bayesian animation branch — <code>L ~ Gamma(α_l⁽⁰⁾, β_l⁽⁰⁾)</code></li>
+      </ul>
+      <p>Default prior parameters are set in the code (e.g. <code>alpha_d_prior</code>, <code>beta_d_prior</code>), and can be exposed to users if desired.</p>
+    </section>
+
+    <section class="card">
+      <h2>4. Bayesian posterior updates (per time step)</h2>
+
+      <details>
+        <summary>Demand (Poisson–Gamma conjugacy)</summary>
+        <div style="margin-top:10px;">
+          <p>After n observations D₁…Dₙ:</p>
+          <pre>
+α_d⁽ⁿ⁾ = α_d⁽⁰⁾ + Σ D_t
+β_d⁽ⁿ⁾ = β_d⁽⁰⁾ + n
+E[λ | data] = α_d⁽ⁿ⁾ / β_d⁽ⁿ⁾
+MAP(λ) = (α_d⁽ⁿ⁾ - 1) / β_d⁽ⁿ⁾  (if α_d⁽ⁿ⁾ &gt; 1)
+          </pre>
+        </div>
+      </details>
+
+      <details>
+        <summary>Lead time (Gamma prior)</summary>
+        <div style="margin-top:10px;">
+          <pre>
+α_l⁽ⁿ⁾ = α_l⁽⁰⁾ + Σ L_t
+β_l⁽ⁿ⁾ = β_l⁽⁰⁾ + n
+E[L | data] = α_l⁽ⁿ⁾ / β_l⁽ⁿ⁾
+MAP(L) = (α_l⁽ⁿ⁾ - 1) / β_l⁽ⁿ⁾  (if α_l⁽ⁿ⁾ &gt; 1)
+          </pre>
+        </div>
+      </details>
+
+    </section>
+
+    <section class="card">
+      <h2>5. Posterior predictive for demand during lead time (DLT)</h2>
+      <p>We use Monte Carlo sampling to capture joint uncertainty in λ and L:</p>
+      <ol>
+        <li>Draw λ^(i) ~ Gamma(α_d⁽ⁿ⁾, scale=1/β_d⁽ⁿ⁾) for i=1..N</li>
+        <li>Draw L^(i) ~ Gamma(α_l⁽ⁿ⁾, scale=1/β_l⁽ⁿ⁾) for i=1..N</li>
+        <li>Draw DLT^(i) ~ Poisson(λ^(i) × L^(i))</li>
+      </ol>
+      <p>From the N samples of DLT compute:</p>
+      <pre>
+μ_DLT ≈ (1/N) Σ DLT^(i)
+σ_DLT ≈ sqrt( (1/(N-1)) Σ (DLT^(i) - μ_DLT)^2 )
+      </pre>
+      <p>These give the posterior predictive mean and standard deviation for total demand during lead time.</p>
+    </section>
+
+    <section class="card">
+      <h2>6. Safety stock & reorder point</h2>
+      <p>Using your chosen service level p (e.g., 95%) compute the z-score <code>z = Φ⁻¹(p)</code>, then:</p>
+      <pre>
+SafetyStock = z × σ_DLT
+ReorderPoint = μ_DLT + SafetyStock
+      </pre>
+      <p><strong>Note</strong>: the app also displays an approximate closed-form variance used for reference:</p>
+      <pre>
+Var(DLT) ≈ μ_L σ_D^2 + μ_D^2 σ_L^2
+SS ≈ z × sqrt( μ_L σ_D^2 + μ_D^2 σ_L^2 )
+      </pre>
+      <p>But the primary calculation in the app uses Monte Carlo samples of DLT for accuracy.</p>
+    </section>
+
+    <section class="card">
+      <h2>7. Visualization & update loop</h2>
+      <p>For each incoming data point the app:</p>
+      <ol>
+        <li>Updates posterior parameters (demand & lead time)</li>
+        <li>Samples posterior predictive DLT using Monte Carlo</li>
+        <li>Computes μ_DLT, σ_DLT, SafetyStock</li>
+        <li>Rebuilds Matplotlib figures and renders them into Streamlit placeholders</li>
+      </ol>
+      <p>Important implementation notes:</p>
+      <ul>
+        <li>Axes and artists are cleared each frame to avoid accumulation</li>
+        <li>Safety-stock history is reset when the animation restarts</li>
+        <li>The loop speed is controlled by <code>update_interval</code></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>8. Inputs & UI</h2>
+      <ul>
+        <li><strong>λ</strong> — mean daily demand (sidebar)</li>
+        <li><strong>min_lead</strong>, <strong>max_lead</strong> — integer lead time range (sidebar)</li>
+        <li><strong>service_level</strong> — shown as a percentage in the UI, converted to decimal for z</li>
+        <li>Prior hyperparameters (α, β) for demand & lead time are configurable in code</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>9. Assumptions & limitations</h2>
+      <ul>
+        <li><strong>No trend or seasonality</strong> — demand is stationary Poisson. If trend/seasonality exist, the model underperforms unless extended.</li>
+        <li><strong>Independence</strong> — demand and lead time are treated independent. If correlated, results may be biased.</li>
+        <li><strong>Gamma model approximations</strong> — lead time is discrete in simulation but modeled as Gamma for posterior convenience.</li>
+        <li><strong>Monte Carlo noise</strong> — sampling introduces variability; use larger N for stability (e.g., 5000).</li>
+        <li><strong>Service level via Normal z-score</strong> — for skewed DLT distributions consider using direct predictive quantiles instead of z×σ.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>10. Practical tips & extensions</h2>
+      <ul>
+        <li>Use posterior predictive quantiles (empirical p-th percentile of DLT samples) to set ROP directly for better tail accuracy.</li>
+        <li>Replace conjugate quick-updates with a fully Bayesian Poisson regression (PyMC/NumPyro) to model trend & seasonality.</li>
+        <li>For discrete lead times consider bootstrap sampling from historical L_t instead of Gamma fitting.</li>
+        <li>Expose prior hyperparameters in the UI for advanced users to tune prior strength.</li>
+      </ul>
+    </section>
+
+    <footer class="muted">
+      Generated documentation — copy into README or embed in your Streamlit app with <code>st.markdown</code> or using an <code>iframe</code>.
+    </footer>
+  </main>
+</body>
+</html>
