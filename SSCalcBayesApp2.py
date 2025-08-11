@@ -45,10 +45,10 @@ import streamlit as st
 
 
 
-link='check out this [link](./SS_CalcBayesApprDoc.html)'
+link='Detailed Document [link](https://prasannamummigatti.github.io/SS_BayesianInference/SS_CalcBayesApprDoc.html)'
 st.markdown(link,unsafe_allow_html=True)
 
-st.markdown("""Demand & Lead Time Assumptions : In this simulation, daily demand follows a Poisson distribution,
+st.markdown("""<b>Demand & Lead Time Assumptions :</b> <br> In this simulation, daily demand follows a Poisson distribution,
              representing random, independent customer orders with a stable average rate (λ).
              This means that while the long-term average demand stays constant, actual daily values naturally fluctuate.
             Lead time—the time between placing an order and receiving it—is modeled as a uniform distribution 
@@ -56,24 +56,26 @@ st.markdown("""Demand & Lead Time Assumptions : In this simulation, daily demand
             This captures the real-world uncertainty in supplier delivery times, 
             such as delays due to transportation or production variability.
             These assumptions allow us to generate realistic, 
-            continuously updating scenarios to test and visualize safety stock calculations in dynamic conditions.""")
+            continuously updating scenarios to test and visualize safety stock calculations in dynamic conditions.""",unsafe_allow_html=True)
 
 
-st.markdown(""" 
+st.markdown("""
+            <b>Posterior Daily Demand Chart</b> <br>
 The Posterior Daily Demand Chart illustrates the updated probability distribution of average daily demand after incorporating observed data. 
 The peak (mode) represents the most likely daily demand value based on historical observations, 
 while the spread (variance) indicates the uncertainty in demand estimation—a narrower spread implies more predictable demand, 
 whereas a wider spread reflects higher variability. 
 By continuously updating these demand estimates, inventory planning becomes more accurate, 
-enabling better safety stock and reorder point calculations.""")
+enabling better safety stock and reorder point calculations.""",unsafe_allow_html=True)
 
 
 st.markdown("""
+<b>Posterior Lead Time Chart</b> <br>
 The Posterior Lead Time Chart shows the refined probability distribution of supplier lead times after factoring in observed delivery data. 
 The peak (mode) identifies the most probable delivery time in days, 
 and the spread (variance) measures the consistency of supplier performance—a narrow spread suggests reliable deliveries, 
 while a wide spread indicates unpredictability. 
-Understanding this variability is crucial for setting appropriate buffer stock levels and preventing stockouts.""")
+Understanding this variability is crucial for setting appropriate buffer stock levels and preventing stockouts.""",unsafe_allow_html=True)
 
 
 
